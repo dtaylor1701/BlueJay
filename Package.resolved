@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "goose",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dtaylor1701/Goose.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "00a17659e9fca089473c50cbce33d0c3d169e1c6"
+      }
+    }
+  ],
+  "version" : 2
+}

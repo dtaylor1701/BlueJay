@@ -5,14 +5,20 @@
 //
 
 import Foundation
+import Goose
 import SwiftUI
 
 public struct DeleteButton<Item: Identifiable>: View {
-  let item: Item
-  
+  public let item: Item
+
   @Binding
-  var array: Array<Item>
-  
+  public var array: [Item]
+
+  public init(item: Item, array: Binding<[Item]>) {
+    self.item = item
+    self._array = array
+  }
+
   public var body: some View {
     Button(role: .destructive) {
       array.delete(item)

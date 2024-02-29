@@ -6,7 +6,11 @@
 import SwiftUI
 
 public struct ListButtonContentContainer: ViewModifier {
-  let isSelected: Bool
+  public let isSelected: Bool
+
+  public init(isSelected: Bool) {
+    self.isSelected = isSelected
+  }
 
   public func body(content: Content) -> some View {
     HStack {

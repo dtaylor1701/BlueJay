@@ -1,9 +1,12 @@
 import SwiftUI
 
 public struct EditView<Content: View>: View {
-  let content: () -> Content
-  let onCancel: () -> Void
-  let onDone: () -> Void
+  private let content: () -> Content
+  private let onCancel: () -> Void
+  private let onDone: () -> Void
+
+  @Environment(\.dismiss)
+  private var dismiss
 
   public init(
     @ViewBuilder content: @escaping () -> Content,
@@ -17,7 +20,7 @@ public struct EditView<Content: View>: View {
 
   public var body: some View {
     NavigationView {
-      content
+      content()
         .toolbar {
           ToolbarItem(placement: .primaryAction) {
             Button("Done") {
