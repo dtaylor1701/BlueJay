@@ -17,7 +17,6 @@ let package = Package(
       name: "BlueJay",
       targets: ["BlueJay"])
   ],
-
   dependencies: [
     .package(url: "https://github.com/dtaylor1701/Goose.git", branch: "main")
   ],
