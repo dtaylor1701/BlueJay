@@ -8,13 +8,15 @@
 import Foundation
 import SwiftUI
 
-public struct ProgressContainer<Content: View, Value, Error: Swift.Error>: View {
+public struct ProgressContainer<Content: View, ErrorContent: View, Value, Error: Swift.Error>: View {
   private let progressState: ProgressState<Value, Error>
   private let content: (Value) -> Content
+  private let errorContent: (Error) -> ErrorContent
   
-  public init(progressState: ProgressState<Value, Error>, content: @escaping (Value) -> Content) {
+  public init(progressState: ProgressState<Value, Error>, content: @escaping (Value) -> Content, errorContent: @escaping (Error) -> ErrorContent) {
     self.progressState = progressState
     self.content = content
+    self.errorContent = errorContent
   }
   
   public var body: some View {
@@ -26,7 +28,7 @@ public struct ProgressContainer<Content: View, Value, Error: Swift.Error>: View 
       case .success(let value):
         content(value)
       case .failure(let error):
-        Text("Something went wrong.")
+        errorContent(error)
       }
     }
   }
