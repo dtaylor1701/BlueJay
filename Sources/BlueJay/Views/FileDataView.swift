@@ -5,6 +5,11 @@ public struct FileDataView<Content: View>: View {
   public let file: File
   public var content: (Data) -> Content
   
+  public init(file: File, content: @escaping (Data) -> Content) {
+    self.file = file
+    self.content = content
+  }
+  
   private var data: Data? {
     try? file.data()
   }
