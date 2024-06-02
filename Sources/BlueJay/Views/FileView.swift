@@ -34,11 +34,13 @@ public struct FileView: View {
         }
         Menu {
           selectFileButton
+            .labelStyle(.titleAndIcon)
           clearFileButton
+            .labelStyle(.titleAndIcon)
         } label: {
           Label("More Options", systemImage: "ellipsis.circle")
+            .labelStyle(.iconOnly)
         }
-        .labelStyle(.iconOnly)
         .buttonStyle(.plain)
       } else {
         selectFileButton
