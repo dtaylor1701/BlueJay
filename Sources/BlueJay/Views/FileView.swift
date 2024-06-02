@@ -19,31 +19,29 @@ public struct FileView: View {
     self.allowedContentTypes = allowedContentTypes
   }
   
-  @ViewBuilder
-  private var content: some View {
-    if let file {
-      if let url = try? file.url() {
-        Button {
-          NSWorkspace.shared.activateFileViewerSelecting([url])
-        } label: {
-          Label(url.lastPathComponent, systemImage: "doc.fill.badge.ellipsis")
-        }
-        .buttonStyle(.link)
-      } else {
-        Image(systemName: "exclamationmark.triangle.fill")
-      }
-    } else {
-      EmptyView()
-    }
-  }
-  
   public var body: some View {
-    VStack {
-      content
-      Button {
-        isImporterPresented = true
-      } label: {
-        Label("Select \(title)", systemImage: "doc.text.magnifyingglass")
+    HStack {
+      if let file {
+        if let url = try? file.url() {
+          Button {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+          } label: {
+            Text(url.lastPathComponent)
+          }
+          .buttonStyle(.link)
+        } else {
+          Image(systemName: "exclamationmark.triangle.fill")
+        }
+        Menu {
+          selectFileButton
+          clearFileButton
+        } label: {
+          Label("More Options", systemImage: "ellipsis.circle")
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.plain)
+      } else {
+        selectFileButton
       }
     }
     .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: allowedContentTypes) { result in
@@ -54,10 +52,27 @@ public struct FileView: View {
         } catch {
           log.error("\(error)")
         }
-        
       case .failure(let error):
         log.error("\(error)")
       }
+    }
+  }
+    
+  @ViewBuilder
+  private var selectFileButton: some View {
+    Button {
+      isImporterPresented = true
+    } label: {
+      Label("Select \(title)", systemImage: "doc.text.magnifyingglass")
+    }
+  }
+  
+  @ViewBuilder
+  private var clearFileButton: some View {
+    Button {
+      file = nil
+    } label: {
+      Label("Clear", systemImage: "xmark.circle")
     }
   }
 }
