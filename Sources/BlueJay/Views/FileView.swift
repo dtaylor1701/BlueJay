@@ -13,16 +13,20 @@ public struct FileView: View {
   @State
   private var isImporterPresented: Bool = false
 
+  @State
+  private var url: URL?
+
   public init(title: String, file: Binding<File?>, allowedContentTypes: [UTType]) {
     _file = file
     self.title = title
     self.allowedContentTypes = allowedContentTypes
+    self.url = try? file.wrappedValue?.url()
   }
 
   public var body: some View {
     HStack {
       if file != nil {
-        if let url = try? file?.url() {
+        if let url {
           Button {
             NSWorkspace.shared.activateFileViewerSelecting([url])
           } label: {
@@ -58,6 +62,9 @@ public struct FileView: View {
       case .failure(let error):
         log.error("\(error)")
       }
+    }
+    .onChange(of: file?.bookmark) { _ in
+      url = try? file?.url()
     }
   }
 
