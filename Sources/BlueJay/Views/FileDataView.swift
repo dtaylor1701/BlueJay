@@ -11,7 +11,6 @@ public struct FileDataView<Content: View>: View {
   public init(file: Binding<File>, content: @escaping (Data) -> Content) {
     self._file = file
     self.content = content
-    self.data = try? file.wrappedValue.data()
   }
 
   public var body: some View {
@@ -26,6 +25,9 @@ public struct FileDataView<Content: View>: View {
       }
     }
     .onChange(of: file.bookmark) { _ in
+      data = try? file.data()
+    }
+    .task {
       data = try? file.data()
     }
   }

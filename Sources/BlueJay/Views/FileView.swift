@@ -20,7 +20,6 @@ public struct FileView: View {
     _file = file
     self.title = title
     self.allowedContentTypes = allowedContentTypes
-    self.url = try? file.wrappedValue?.url()
   }
 
   public var body: some View {
@@ -64,6 +63,9 @@ public struct FileView: View {
       }
     }
     .onChange(of: file?.bookmark) { _ in
+      url = try? file?.url()
+    }
+    .task {
       url = try? file?.url()
     }
   }
