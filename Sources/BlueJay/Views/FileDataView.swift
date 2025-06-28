@@ -1,3 +1,4 @@
+#if os(macOS)
 import Goose
 import SwiftUI
 
@@ -32,3 +33,4 @@ public struct FileDataView<Content: View>: View {
     }
   }
 }
+#endif

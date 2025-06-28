@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import Goose
 import SwiftUI
@@ -88,3 +89,14 @@ public struct FileView: View {
     }
   }
 }
+
+#Preview {
+  FileView(title: "Test file", file: Binding<File?>(get: {
+    return nil
+  }, set: { _ in
+    
+  }), allowedContentTypes: [.text])
+  .padding()
+}
+
+#endif

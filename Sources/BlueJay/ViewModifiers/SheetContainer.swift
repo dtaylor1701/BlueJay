@@ -97,8 +97,19 @@ public extension View {
   }
 }
 
-
 #Preview {
   Text("Hello there!")
     .asSheet(configuration: .cancel)
+}
+
+#Preview {
+  Text("Hello there!")
+    .asSheet(configuration: .done)
+}
+
+#Preview {
+  Text("Hello there!")
+    .asSheet(configuration: .cancelDone(onDone: {
+      
+    }))
 }

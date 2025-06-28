@@ -1,0 +1,15 @@
+{
+  "originHash" : "54360a7261d6320fd3fd9f98f4627bec3052df77bea51369a08f8d7c8584c648",
+  "pins" : [
+    {
+      "identity" : "goose",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dtaylor1701/Goose.git",
+      "state" : {
+        "revision" : "68582334ca8ccbff9a27edefa894bb6508febcdf",
+        "version" : "1.4.1"
+      }
+    }
+  ],
+  "version" : 3
+}

@@ -6,9 +6,9 @@ import PackageDescription
 let package = Package(
   name: "BlueJay",
   platforms: [
-    .iOS(.v13),
+    .iOS(.v16),
     .macOS(.v13),
-    .tvOS(.v13),
+    .tvOS(.v16),
     .watchOS(.v7),
   ],
   products: [

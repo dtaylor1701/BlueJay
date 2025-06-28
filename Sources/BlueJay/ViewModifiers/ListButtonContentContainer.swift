@@ -30,3 +30,22 @@ extension View {
     modifier(ListButtonContentContainer(isSelected: isSelected ?? false))
   }
 }
+
+#Preview {
+  List {
+    Button {
+      
+    } label: {
+      Text("Some Button")
+    }
+    .buttonStyle(.plain)
+    .modifier(ListButtonContentContainer(isSelected: false))
+    Button {
+      
+    } label: {
+      Text("Some Selected Button")
+    }
+    .buttonStyle(.plain)
+    .modifier(ListButtonContentContainer(isSelected: true))
+  }
+}

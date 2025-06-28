@@ -33,3 +33,30 @@ public struct ProgressContainer<Content: View, ErrorContent: View, Value, Error:
     }
   }
 }
+
+#Preview {
+  ProgressContainer(progressState: ProgressState<Int, Error>.started) { value in
+    Text("\(value)")
+  } errorContent: { error in
+    Text("\(error.localizedDescription)")
+  }
+  .padding()
+}
+
+#Preview {
+  ProgressContainer(progressState: ProgressState<Int, Error>.finished(.success(3))) { value in
+    Text("\(value)")
+  } errorContent: { error in
+    Text("\(error.localizedDescription)")
+  }
+  .padding()
+}
+
+#Preview {
+  ProgressContainer(progressState: ProgressState<Int, Error>.finished(.failure(NSError(domain: "test", code: 500)))) { value in
+    Text("\(value)")
+  } errorContent: { error in
+    Text("\(error.localizedDescription)")
+  }
+  .padding()
+}

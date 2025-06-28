@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dtaylor1701/Goose.git",
       "state" : {
-        "revision" : "941ed7439749b8155bf643aefc8e9f3f900e4956",
-        "version" : "1.4.0"
+        "revision" : "a62d4ed7fa00ae3a2b9ea28805453ecc5facc228",
+        "version" : "1.4.2"
       }
     }
   ],
