@@ -9,8 +9,8 @@ public struct AuthenticationView<Content: View>: View {
   }
 
   public struct Credentials {
-    let email: String
-    let password: String
+    public let email: String
+    public let password: String
   }
 
   // MARK: - Configuration
