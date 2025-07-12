@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by David Taylor on 5/22/24.
 //
@@ -8,17 +8,21 @@
 import Foundation
 import SwiftUI
 
-public struct ProgressContainer<Content: View, ErrorContent: View, Value, Error: Swift.Error>: View {
+public struct ProgressContainer<Content: View, ErrorContent: View, Value, Error: Swift.Error>: View
+{
   private let progressState: ProgressState<Value, Error>
   private let content: (Value) -> Content
   private let errorContent: (Error) -> ErrorContent
-  
-  public init(progressState: ProgressState<Value, Error>, content: @escaping (Value) -> Content, errorContent: @escaping (Error) -> ErrorContent) {
+
+  public init(
+    progressState: ProgressState<Value, Error>, content: @escaping (Value) -> Content,
+    errorContent: @escaping (Error) -> ErrorContent
+  ) {
     self.progressState = progressState
     self.content = content
     self.errorContent = errorContent
   }
-  
+
   public var body: some View {
     switch progressState {
     case .started:
@@ -53,7 +57,9 @@ public struct ProgressContainer<Content: View, ErrorContent: View, Value, Error:
 }
 
 #Preview {
-  ProgressContainer(progressState: ProgressState<Int, Error>.finished(.failure(NSError(domain: "test", code: 500)))) { value in
+  ProgressContainer(
+    progressState: ProgressState<Int, Error>.finished(.failure(NSError(domain: "test", code: 500)))
+  ) { value in
     Text("\(value)")
   } errorContent: { error in
     Text("\(error.localizedDescription)")
