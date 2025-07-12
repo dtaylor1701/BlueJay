@@ -44,11 +44,8 @@ public struct SheetContainer: ViewModifier {
   public func body(content: Content) -> some View {
     VStack {
       content
-        .padding()
-      Spacer()
       navigationElements
     }
-    .frame(minWidth: 200, minHeight: 300)
   }
   
   @ViewBuilder
