@@ -1,12 +1,10 @@
-import XCTest
+import Testing
 @testable import BlueJay
 
-final class BlueJayTests: XCTestCase {
-    func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
-
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
+@Suite("BlueJay Tests")
+struct BlueJayTests {
+    @Test func example() throws {
+        // Swift Testing Documentation
+        // https://developer.apple.com/documentation/testing
     }
 }
