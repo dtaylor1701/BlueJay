@@ -9,7 +9,7 @@
 
     public var content: (Data) -> Content
 
-    public init(file: Binding<File>, content: @escaping (Data) -> Content) {
+    public init(file: Binding<File>, @ViewBuilder content: @escaping (Data) -> Content) {
       self._file = file
       self.content = content
     }
