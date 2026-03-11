@@ -1,13 +1,19 @@
 import SwiftUI
 
+/// A standard authentication view providing login and registration forms.
+///
+/// `AuthenticationView` handles the UI and state for email/password authentication,
+/// including switching between login and registration modes.
 public struct AuthenticationView<Content: View>: View {
   // MARK: - Types
 
+  /// The available authentication modes.
   public enum Configuration {
     case login
     case register
   }
 
+  /// The credentials collected from the form.
   public struct Credentials {
     public let email: String
     public let password: String
@@ -43,6 +49,13 @@ public struct AuthenticationView<Content: View>: View {
 
   // MARK: - Initializers
 
+  /// - Parameters:
+  ///   - email: Initial email value.
+  ///   - password: Initial password value.
+  ///   - initialConfiguration: Whether to start in login or register mode.
+  ///   - onLogin: Async closure called when the user submits the login form.
+  ///   - onRegister: Async closure called when the user submits the registration form.
+  ///   - heroContent: A view builder for content displayed at the top of the form (e.g., a logo).
   public init(
     email: String = "",
     password: String = "",

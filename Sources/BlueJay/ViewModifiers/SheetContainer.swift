@@ -7,10 +7,17 @@
 import Foundation
 import SwiftUI
 
+/// A view modifier that adds a standard footer for sheets with "Done" and "Cancel" buttons.
+///
+/// Use this to quickly add common navigation elements to views presented in a sheet.
 public struct SheetContainer: ViewModifier {
+  /// The configuration options for the sheet container's buttons.
   public enum Configuration {
+    /// Only the "Done" button is shown.
     case done
+    /// Only the "Cancel" button is shown.
     case cancel
+    /// Both "Cancel" and "Done" buttons are shown, with an optional action for "Done".
     case cancelDone(onDone: () -> Void)
   }
   
@@ -89,6 +96,11 @@ public struct SheetContainer: ViewModifier {
 }
 
 public extension View {
+  /// Wraps the view in a `SheetContainer` with the specified configuration.
+  ///
+  /// This is typically used for views presented as a sheet to provide a consistent footer.
+  ///
+  /// - Parameter configuration: The button configuration to use in the footer.
   func asSheet(configuration: SheetContainer.Configuration) -> some View {
     modifier(SheetContainer(configuration: configuration))
   }

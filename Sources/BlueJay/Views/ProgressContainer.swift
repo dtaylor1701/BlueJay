@@ -8,12 +8,19 @@
 import Foundation
 import SwiftUI
 
+/// A container view that automatically switches between loading, content, and error states.
+///
+/// `ProgressContainer` uses `ProgressState` to determine which view to display.
 public struct ProgressContainer<Content: View, ErrorContent: View, Value, Error: Swift.Error>: View
 {
   private let progressState: ProgressState<Value, Error>
   private let content: (Value) -> Content
   private let errorContent: (Error) -> ErrorContent
 
+  /// - Parameters:
+  ///   - progressState: The current state of the operation.
+  ///   - content: A view builder for the success state, receiving the resulting value.
+  ///   - errorContent: A view builder for the error state, receiving the error.
   public init(
     progressState: ProgressState<Value, Error>, content: @escaping (Value) -> Content,
     errorContent: @escaping (Error) -> ErrorContent

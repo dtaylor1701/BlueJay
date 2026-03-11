@@ -1,10 +1,15 @@
 import SwiftUI
 
+/// A view that fetches and displays the favicon for a given URL.
+///
+/// It uses a third-party service (Google's favicon API) to retrieve the icon
+/// and provides a fallback globe icon if the favicon cannot be fetched.
 public struct FaviconView: View {
   private let url: URL?
 
   @State private var imageData: Data?
 
+  /// - Parameter url: The URL for which to display the favicon.
   public init(url: URL?) {
     self.url = url
   }

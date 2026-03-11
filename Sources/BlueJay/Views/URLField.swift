@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
 
+/// A specialized text field for inputting and validating URLs.
+///
+/// `URLField` provides a text input that automatically attempts to parse
+/// entered text into a valid `URL`. It also provides an optional "Open" button.
 public struct URLField: View {
   @Binding private var url: URL?
   private let title: String
@@ -26,6 +30,10 @@ public struct URLField: View {
     }
   }
 
+  /// - Parameters:
+  ///   - title: The placeholder title for the text field.
+  ///   - url: A binding to the URL to be edited.
+  ///   - openable: Whether to show a button to open the URL in the default browser.
   public init(_ title: String, url: Binding<URL?>, openable: Bool = true) {
     self.title = title
     self._url = url

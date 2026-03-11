@@ -4,6 +4,10 @@
   import SwiftUI
   import UniformTypeIdentifiers
 
+  /// A view for selecting and managing a `File` on macOS.
+  ///
+  /// `FileView` provides a button to trigger a file importer and shows the
+  /// selected file's name with an option to reveal it in Finder or clear it.
   public struct FileView: View {
     private let title: String
     private let allowedContentTypes: [UTType]
@@ -17,6 +21,10 @@
     @State
     private var url: URL?
 
+    /// - Parameters:
+    ///   - title: The name of the file type being selected (e.g., "Image").
+    ///   - file: A binding to the optional `File` being managed.
+    ///   - allowedContentTypes: The types of files that can be selected.
     public init(title: String, file: Binding<File?>, allowedContentTypes: [UTType]) {
       _file = file
       self.title = title

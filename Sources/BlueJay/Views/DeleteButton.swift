@@ -8,12 +8,20 @@ import Foundation
 import Goose
 import SwiftUI
 
+/// A button that deletes an item from a binding to an array.
+///
+/// This view provides a standard "trash" icon button with a "destructive" role.
 public struct DeleteButton<Item: Identifiable>: View {
+  /// The item to be deleted.
   public let item: Item
 
+  /// A binding to the array from which the item should be removed.
   @Binding
   public var array: [Item]
 
+  /// - Parameters:
+  ///   - item: The item to delete.
+  ///   - array: A binding to the array containing the item.
   public init(item: Item, array: Binding<[Item]>) {
     self.item = item
     self._array = array
