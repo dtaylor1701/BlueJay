@@ -18,7 +18,7 @@ let package = Package(
       targets: ["BlueJay"])
   ],
   dependencies: [
-    .package(url: "https://github.com/dtaylor1701/Goose.git", .upToNextMajor(from: "1.0.0"))
+    .package(path: "../Goose")
   ],
   targets: [
     // Targets are the basic building blocks of a package, defining a module or a test suite.
