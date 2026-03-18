@@ -65,10 +65,10 @@
           do {
             file = try File(at: url)
           } catch {
-            log.error("\(error)")
+            BlueJayLog.view.error("\(error)")
           }
         case .failure(let error):
-          log.error("\(error)")
+          BlueJayLog.view.error("\(error)")
         }
       }
       .onChange(of: file?.bookmark) { _ in

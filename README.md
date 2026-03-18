@@ -10,7 +10,7 @@ BlueJay is organized into several logical component groups to help you build con
 Specialized views for managing files with support for bookmarks, thumbnails, and drag-and-drop:
 *   `FileView`: A platform-native file selection and display component.
 *   `FileDataView`: For displaying detailed information about a specific file.
-*   `FileDropArea`: A view modifier/component for handling file drop interactions.
+*   `DragDropView`: A cross-platform component and view modifier for handling file drop interactions.
 *   `FileThumbnailView`: Asynchronous thumbnail generation and display for various file types.
 
 ### 🖼️ Core UI Components
