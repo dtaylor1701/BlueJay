@@ -4,7 +4,6 @@ import BlueJay
 enum Example: String, CaseIterable, Identifiable {
   case authenticationView
   case deleteButton
-  case dragDrop
   case editView
   case faviconView
   case fileViews
@@ -19,7 +18,6 @@ enum Example: String, CaseIterable, Identifiable {
     switch self {
     case .authenticationView: "Authentication View"
     case .deleteButton: "Delete Button"
-    case .dragDrop: "Drag and Drop"
     case .editView: "Edit View"
     case .faviconView: "Favicon View"
     case .fileViews: "File Views (macOS)"
@@ -37,8 +35,6 @@ enum Example: String, CaseIterable, Identifiable {
       AuthenticationExample()
     case .deleteButton:
       DeleteButtonExample()
-    case .dragDrop:
-      DragDropExample()
     case .editView:
       EditViewExample()
     case .faviconView:
@@ -107,34 +103,6 @@ struct DeleteButtonExample: View {
   }
 }
 
-struct DragDropExample: View {
-  @State private var droppedURLs: [URL] = []
-  @State private var isTargeted = false
-
-  var body: some View {
-    VStack {
-      Text("Drop files here")
-        .font(.headline)
-        .frame(maxWidth: .infinity)
-        .frame(height: 200)
-        .background(isTargeted ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.1))
-        .cornerRadius(12)
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .strokeBorder(isTargeted ? Color.accentColor : Color.gray, style: StrokeStyle(lineWidth: 2, dash: [5]))
-        )
-        .fileDragAndDrop(isTargeted: $isTargeted) { urls in
-          droppedURLs.append(contentsOf: urls)
-        }
-        .padding()
-
-      List(droppedURLs, id: \.self) { url in
-        Text(url.lastPathComponent)
-      }
-    }
-  }
-}
-
 struct EditViewExample: View {
   @State var isPresented = false
   @State var text = "Edit me"
@@ -193,15 +161,6 @@ struct FileViewsExample: View {
           Text("File size: \(data.count) bytes")
         }
       }
-      
-      Text("Drop a file here")
-        .frame(width: 200, height: 100)
-        .background(Color.gray.opacity(0.2))
-        .fileDragAndDrop { urls in
-          if let url = urls.first {
-            self.file = try? File(at: url)
-          }
-        }
     }
     .padding()
   }
