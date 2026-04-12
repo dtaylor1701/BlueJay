@@ -43,7 +43,7 @@ public struct FileThumbnailView: View {
   public var body: some View {
     GeometryReader { proxy in
       content
-        .task {
+        .task(id: file.bookmark) {
           do {
             try await generateThumbnailRepresentations(size: proxy.size)
           } catch {
@@ -55,16 +55,19 @@ public struct FileThumbnailView: View {
 
   /// Generates the thumbnail representation using `QLThumbnailGenerator`.
   func generateThumbnailRepresentations(size: CGSize) async throws {
-    let url = try file.url()
-    let request = QLThumbnailGenerator.Request(
-      fileAt: url,
-      size: size,
-      scale: scale,
-      representationTypes: .all)
-
-    let generator = QLThumbnailGenerator.shared
-    let representation = try await generator.generateBestRepresentation(for: request)
-    thumbnail = Image(nsImage: representation.nsImage)
+    var file = self.file
+    try await file.withURL { url in
+      let request = QLThumbnailGenerator.Request(
+        fileAt: url,
+        size: size,
+        scale: scale,
+        representationTypes: .all)
+      
+      let generator = QLThumbnailGenerator.shared
+      let representation = try await generator.generateBestRepresentation(for: request)
+      thumbnail = Image(nsImage: representation.nsImage)
+    }
+    self.file = file
   }
 }
 #endif

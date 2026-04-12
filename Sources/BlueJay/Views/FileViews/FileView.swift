@@ -1,13 +1,18 @@
-#if os(macOS)
+#if os(macOS) || os(iOS)
   import Foundation
   import Goose
   import SwiftUI
   import UniformTypeIdentifiers
 
-  /// A view for selecting and managing a `File` on macOS.
+  #if os(macOS)
+    import AppKit
+  #endif
+
+  /// A view for selecting and managing a `File`.
   ///
   /// `FileView` provides a button to trigger a file importer and shows the
-  /// selected file's name with an option to reveal it in Finder or clear it.
+  /// selected file's name with an option to clear it. On macOS, it also
+  /// allows revealing the file in Finder.
   public struct FileView: View {
     private let title: String
     private let allowedContentTypes: [UTType]
@@ -20,6 +25,9 @@
 
     @State
     private var url: URL?
+
+    @State
+    private var isResolving: Bool = false
 
     /// - Parameters:
     ///   - title: The name of the file type being selected (e.g., "Image").
@@ -35,14 +43,13 @@
       HStack {
         if file != nil {
           if let url {
-            Button {
-              NSWorkspace.shared.activateFileViewerSelecting([url])
-            } label: {
-              Text(url.lastPathComponent)
-            }
-            .buttonStyle(.link)
+            fileLabel(for: url)
+          } else if isResolving {
+            ProgressView()
+              .controlSize(.small)
           } else {
             Image(systemName: "exclamationmark.triangle.fill")
+              .foregroundColor(.yellow)
           }
           Menu {
             selectFileButton
@@ -58,25 +65,61 @@
           selectFileButton
         }
       }
-      .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: allowedContentTypes) {
-        result in
+      .fileImporter(
+        isPresented: $isImporterPresented,
+        allowedContentTypes: allowedContentTypes
+      ) { result in
         switch result {
-        case .success(let url):
+        case .success(let selectedUrl):
           do {
-            file = try File(at: url)
+            let newFile = try File(at: selectedUrl)
+            // Update both to maintain immediate consistency
+            url = selectedUrl
+            file = newFile
           } catch {
-            BlueJayLog.view.error("\(error)")
+            BlueJayLog.view.error("Failed to create File from URL: \(error)")
           }
         case .failure(let error):
-          BlueJayLog.view.error("\(error)")
+          BlueJayLog.view.error("File importer failed: \(error)")
         }
       }
-      .onChange(of: file?.bookmark) { _ in
-        url = try? file?.url()
+      .task(id: file?.bookmark) {
+        guard var resolvedFile = file else {
+          url = nil
+          isResolving = false
+          return
+        }
+
+        // If current url already matches what we expect from file (identity-wise),
+        // we might still want to resolve to be sure, but we can avoid flickering.
+        isResolving = true
+        do {
+          url = try resolvedFile.resolveURL()
+          // Update the binding if the file was modified (e.g. bookmark refreshed)
+          if resolvedFile.bookmark != file?.bookmark {
+            file = resolvedFile
+          }
+        } catch {
+          BlueJayLog.view.error("Failed to resolve URL for file: \(error)")
+          url = nil
+        }
+        isResolving = false
       }
-      .task {
-        url = try? file?.url()
-      }
+    }
+
+    @ViewBuilder
+    private func fileLabel(for url: URL) -> some View {
+      #if os(macOS)
+        Button {
+          NSWorkspace.shared.activateFileViewerSelecting([url])
+        } label: {
+          Text(url.lastPathComponent)
+        }
+        .buttonStyle(.link)
+      #else
+        Text(url.lastPathComponent)
+          .font(.body)
+      #endif
     }
 
     @ViewBuilder
@@ -92,6 +135,7 @@
     private var clearFileButton: some View {
       Button {
         file = nil
+        url = nil
       } label: {
         Label("Clear", systemImage: "xmark.circle")
       }
@@ -101,13 +145,8 @@
   #Preview {
     FileView(
       title: "Test file",
-      file: Binding<File?>(
-        get: {
-          return nil
-        },
-        set: { _ in
-
-        }), allowedContentTypes: [.text]
+      file: .constant(nil),
+      allowedContentTypes: [.text]
     )
     .padding()
   }

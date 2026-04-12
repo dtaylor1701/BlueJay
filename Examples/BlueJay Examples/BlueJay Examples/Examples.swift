@@ -197,10 +197,11 @@ struct ProgressContainerExample: View {
       HStack {
         Button("Start") { state = .started }
         Button("Succeed") { state = .finished(.success("Success!")) }
-        Button("Fail") { state = .finished(.failure(NSError(domain: "test", code: 0))) }
+        Button("Fail") { state = .finished(.failure(NSError(domain: "test", code: 0, userInfo: [NSLocalizedDescriptionKey: "Something went wrong!"]))) }
       }
       .padding()
     }
+    .errorAlert(for: $state)
   }
 }
 

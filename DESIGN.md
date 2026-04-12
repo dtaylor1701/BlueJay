@@ -35,6 +35,7 @@ BlueJay uses SPM for all external logic. It currently integrates the `Goose` pac
 The core of BlueJay's state management is the `ProgressState` enum, which tracks the lifecycle of asynchronous operations:
 ```swift
 public enum ProgressState<Value, Error: Swift.Error> {
+  case idle
   case started
   case finished(Result<Value, Error>)
 }
@@ -59,6 +60,7 @@ BlueJay interacts with file system entities through a `File` abstraction (provid
 - **Utilities**:
     - `FaviconView`: Asynchronous loading and display of website icons.
     - `ProgressContainer`: A wrapper for displaying activity indicators based on `ProgressState`.
+    - `ErrorAlert`: A view modifier for presenting standard error alerts.
 
 ### Internal Interactions
 Components often use `ViewModifiers` like `SheetContainer` and `ListButtonContentContainer` to maintain consistent layout and presentation logic across the library.

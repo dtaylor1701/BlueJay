@@ -34,10 +34,7 @@
           }
         }
       }
-      .onChange(of: file.bookmark) { _ in
-        data = try? file.data()
-      }
-      .task {
+      .task(id: file.bookmark) {
         data = try? file.data()
       }
     }

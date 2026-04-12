@@ -24,6 +24,7 @@ Commonly used interface elements styled for consistency:
 ### 🏗️ Layout & Containers
 View modifiers and containers that ensure consistent presentation across your app:
 *   `ProgressContainer`: Handles loading and progress states gracefully.
+*   `ErrorAlert`: Standardized error presentation via view modifiers.
 *   `SheetContainer`: Standardizes the appearance and behavior of modal sheets.
 *   `ListButtonContentContainer`: Optimizes button layouts within list rows.
 

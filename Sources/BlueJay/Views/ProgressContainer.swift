@@ -32,6 +32,8 @@ public struct ProgressContainer<Content: View, ErrorContent: View, Value, Error:
 
   public var body: some View {
     switch progressState {
+    case .idle:
+      Color.clear
     case .started:
       ProgressView()
     case .finished(let result):
