@@ -1,26 +1,72 @@
 import SwiftUI
+import Crow
 
-/// A lightweight, reusable markdown editor component with live preview, toolbar formatting, and split/editor/preview modes.
+/// A lightweight, reusable Markdown editor component with AST live preview, cursor-aware formatting toolbar, and split/editor/preview modes.
+@MainActor
 public struct MarkdownEditorView: View {
     @Binding var text: String
+
+    /// Optional document title displayed in the header bar.
     public let title: String?
-    public let isDirty: Bool
-    public let onSave: (() -> Void)?
+
+    /// Optional save action closure executed on Save button tap or `Cmd+S`.
+    public let onSave: (@MainActor @Sendable () -> Void)?
 
     @State private var internalMode: MarkdownEditorMode = .split
     private var externalMode: Binding<MarkdownEditorMode>?
 
+    @State private var selection: TextSelection?
+    @State private var internalIsDirty: Bool = false
+    @State private var initialText: String?
+    private var externalIsDirty: Binding<Bool>?
+
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    /// Initializes a Markdown editor view with an external dirty-state boolean.
+    ///
+    /// - Parameters:
+    ///   - text: Binding to the Markdown document string.
+    ///   - title: Optional document title.
+    ///   - isDirty: Initial dirty state value (defaults to false). Edits will automatically update internal dirty state.
+    ///   - mode: Optional external binding controlling the active editor display mode.
+    ///   - onSave: Optional callback executed when the document is saved.
     public init(
         text: Binding<String>,
         title: String? = nil,
         isDirty: Bool = false,
         mode: Binding<MarkdownEditorMode>? = nil,
-        onSave: (() -> Void)? = nil
+        onSave: (@MainActor @Sendable () -> Void)? = nil
     ) {
         self._text = text
         self.title = title
-        self.isDirty = isDirty
+        self._internalIsDirty = State(initialValue: isDirty)
         self.externalMode = mode
+        self.externalIsDirty = nil
+        self.onSave = onSave
+    }
+
+    /// Initializes a Markdown editor view with a two-way dirty-state binding.
+    ///
+    /// - Parameters:
+    ///   - text: Binding to the Markdown document string.
+    ///   - isDirty: Two-way binding reflecting whether the document has unsaved modifications.
+    ///   - title: Optional document title.
+    ///   - mode: Optional external binding controlling the active editor display mode.
+    ///   - onSave: Optional callback executed when the document is saved.
+    public init(
+        text: Binding<String>,
+        isDirty: Binding<Bool>,
+        title: String? = nil,
+        mode: Binding<MarkdownEditorMode>? = nil,
+        onSave: (@MainActor @Sendable () -> Void)? = nil
+    ) {
+        self._text = text
+        self.title = title
+        self._internalIsDirty = State(initialValue: isDirty.wrappedValue)
+        self.externalMode = mode
+        self.externalIsDirty = isDirty
         self.onSave = onSave
     }
 
@@ -28,14 +74,16 @@ public struct MarkdownEditorView: View {
         externalMode ?? $internalMode
     }
 
+    private var isDirty: Bool {
+        externalIsDirty?.wrappedValue ?? internalIsDirty
+    }
+
     public var body: some View {
         VStack(spacing: 0) {
-            // Control & Formatting Bar
             headerBar
 
             Divider()
 
-            // Main Editor / Preview Body
             Group {
                 switch activeMode.wrappedValue {
                 case .editor:
@@ -51,10 +99,18 @@ public struct MarkdownEditorView: View {
                             .frame(minWidth: 260)
                     }
                     #else
-                    HStack(spacing: 0) {
-                        editorPane
-                        Divider()
-                        previewPane
+                    if horizontalSizeClass == .compact {
+                        VStack(spacing: 0) {
+                            editorPane
+                            Divider()
+                            previewPane
+                        }
+                    } else {
+                        HStack(spacing: 0) {
+                            editorPane
+                            Divider()
+                            previewPane
+                        }
                     }
                     #endif
                 }
@@ -63,8 +119,22 @@ public struct MarkdownEditorView: View {
 
             Divider()
 
-            // Status Bar
             statusBar
+        }
+        .onAppear {
+            if initialText == nil {
+                initialText = text
+            }
+        }
+        .onChange(of: text) { _, newText in
+            if let initial = initialText {
+                let dirty = (newText != initial)
+                internalIsDirty = dirty
+                externalIsDirty?.wrappedValue = dirty
+            }
+        }
+        .onChange(of: activeMode.wrappedValue) { oldMode, newMode in
+            Crow.debug("MarkdownEditor mode transitioned from \(oldMode.rawValue) to \(newMode.rawValue)")
         }
     }
 
@@ -81,11 +151,11 @@ public struct MarkdownEditorView: View {
                             .fill(Color.orange)
                             .frame(width: 7, height: 7)
                             .help("Unsaved changes")
+                            .accessibilityLabel("Unsaved changes")
                     }
                 }
             }
 
-            // Mode Picker
             Picker("Editor Mode", selection: activeMode) {
                 ForEach(MarkdownEditorMode.allCases) { mode in
                     Label(mode.rawValue, systemImage: mode.iconName).tag(mode)
@@ -98,13 +168,17 @@ public struct MarkdownEditorView: View {
                 Divider()
                     .frame(height: 18)
 
-                MarkdownToolbar(text: $text)
+                MarkdownToolbar(text: $text, selection: $selection)
             }
 
             Spacer()
 
             if let onSave = onSave {
                 Button {
+                    Crow.info("Markdown document saved (\(text.count) characters)")
+                    initialText = text
+                    internalIsDirty = false
+                    externalIsDirty?.wrappedValue = false
                     onSave()
                 } label: {
                     Label("Save", systemImage: "square.and.arrow.down")
@@ -123,7 +197,7 @@ public struct MarkdownEditorView: View {
 
     @ViewBuilder
     private var editorPane: some View {
-        TextEditor(text: $text)
+        TextEditor(text: $text, selection: $selection)
             .font(.system(.body, design: .monospaced))
             .padding(12)
             .scrollContentBackground(.hidden)
@@ -133,19 +207,8 @@ public struct MarkdownEditorView: View {
     @ViewBuilder
     private var previewPane: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("No content to preview.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    Text(LocalizedStringKey(text))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .padding(16)
+            MarkdownRenderer(markdown: text)
+                .padding(16)
         }
         .background(Color.secondary.opacity(0.03))
     }
@@ -153,11 +216,9 @@ public struct MarkdownEditorView: View {
     @ViewBuilder
     private var statusBar: some View {
         HStack(spacing: 12) {
-            let lines = text.split(separator: "\n", omittingEmptySubsequences: false).count
-            let words = text.split { $0.isWhitespace || $0.isNewline }.count
-            let chars = text.count
+            let stats = MarkdownDocumentStatistics(text: text)
 
-            Text("\(lines) lines • \(words) words • \(chars) chars")
+            Text("\(stats.lines) lines • \(stats.words) words • \(stats.characters) chars")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

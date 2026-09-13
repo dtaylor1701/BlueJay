@@ -1,81 +1,45 @@
 import SwiftUI
 
-/// Pure formatting helpers for manipulating markdown text.
-public enum MarkdownFormatter {
-    public static func appendHeader(level: Int = 2, to text: String) -> String {
-        let prefix = String(repeating: "#", count: level) + " "
-        if text.isEmpty { return prefix }
-        let separator = text.hasSuffix("\n\n") ? "" : (text.hasSuffix("\n") ? "\n" : "\n\n")
-        return text + separator + prefix
-    }
-
-    public static func appendBullet(to text: String) -> String {
-        if text.isEmpty { return "- " }
-        let separator = text.hasSuffix("\n") ? "" : "\n"
-        return text + separator + "- "
-    }
-
-    public static func appendChecklist(to text: String) -> String {
-        if text.isEmpty { return "- [ ] " }
-        let separator = text.hasSuffix("\n") ? "" : "\n"
-        return text + separator + "- [ ] "
-    }
-
-    public static func appendBlockquote(to text: String) -> String {
-        if text.isEmpty { return "> " }
-        let separator = text.hasSuffix("\n") ? "" : "\n"
-        return text + separator + "> "
-    }
-
-    public static func appendCodeBlock(to text: String, language: String = "swift") -> String {
-        let block = "```\(language)\n\n```"
-        if text.isEmpty { return block }
-        let separator = text.hasSuffix("\n\n") ? "" : (text.hasSuffix("\n") ? "\n" : "\n\n")
-        return text + separator + block
-    }
-
-    public static func appendLink(to text: String, title: String = "link title", url: String = "https://example.com") -> String {
-        let link = "[\(title)](\(url))"
-        if text.isEmpty { return link }
-        let separator = text.hasSuffix(" ") || text.hasSuffix("\n") ? "" : " "
-        return text + separator + link
-    }
-
-    public static func wrapBold(to text: String) -> String {
-        "**\(text)**"
-    }
-
-    public static func wrapItalic(to text: String) -> String {
-        "*\(text)*"
-    }
-}
-
-/// A lightweight formatting toolbar for inserting common markdown structures.
+/// A lightweight formatting toolbar for inserting and formatting Markdown structures.
+@MainActor
 public struct MarkdownToolbar: View {
     @Binding var text: String
+    private var selection: Binding<TextSelection?>?
 
-    public init(text: Binding<String>) {
+    /// Initializes a Markdown formatting toolbar.
+    ///
+    /// - Parameters:
+    ///   - text: A binding to the document string.
+    ///   - selection: An optional binding to the current text selection for cursor-aware insertions.
+    public init(text: Binding<String>, selection: Binding<TextSelection?>? = nil) {
         self._text = text
+        self.selection = selection
     }
 
     public var body: some View {
         HStack(spacing: 4) {
             Button {
-                text = MarkdownFormatter.appendHeader(level: 2, to: text)
+                insertHeader()
             } label: {
                 Label("Heading", systemImage: "number")
             }
             .help("Insert Heading (##)")
 
             Button {
-                text += "**bold text**"
+                applyFormatting(
+                    wrap: { MarkdownFormatter.wrapBold(to: $0) },
+                    placeholder: "**bold text**"
+                )
             } label: {
                 Label("Bold", systemImage: "bold")
             }
             .help("Insert Bold (**text**)")
 
             Button {
-                text += "*italic text*"
+                applyFormatting(
+                    wrap: { MarkdownFormatter.wrapItalic(to: $0) },
+                    placeholder: "*italic text*"
+                )
             } label: {
                 Label("Italic", systemImage: "italic")
             }
@@ -85,14 +49,14 @@ public struct MarkdownToolbar: View {
                 .frame(height: 16)
 
             Button {
-                text = MarkdownFormatter.appendBullet(to: text)
+                insertPrefix("- ")
             } label: {
                 Label("Bullet List", systemImage: "list.bullet")
             }
             .help("Insert Bullet List (- item)")
 
             Button {
-                text = MarkdownFormatter.appendChecklist(to: text)
+                insertPrefix("- [ ] ")
             } label: {
                 Label("Checklist", systemImage: "checklist")
             }
@@ -102,21 +66,21 @@ public struct MarkdownToolbar: View {
                 .frame(height: 16)
 
             Button {
-                text = MarkdownFormatter.appendCodeBlock(to: text)
+                insertCodeBlock()
             } label: {
                 Label("Code Block", systemImage: "curlybraces")
             }
             .help("Insert Code Block (```)")
 
             Button {
-                text = MarkdownFormatter.appendBlockquote(to: text)
+                insertPrefix("> ")
             } label: {
                 Label("Quote", systemImage: "quote.opening")
             }
             .help("Insert Blockquote (>)")
 
             Button {
-                text = MarkdownFormatter.appendLink(to: text)
+                insertLink()
             } label: {
                 Label("Link", systemImage: "link")
             }
@@ -125,5 +89,73 @@ public struct MarkdownToolbar: View {
         .buttonStyle(.borderless)
         .labelStyle(.iconOnly)
         .controlSize(.small)
+    }
+
+    private func applyFormatting(wrap: (String) -> String, placeholder: String) {
+        if let binding = selection, let sel = binding.wrappedValue, case .selection(let range) = sel.indices {
+            if range.isEmpty {
+                // Insert at caret
+                text.insert(contentsOf: placeholder, at: range.lowerBound)
+                let newEnd = text.index(range.lowerBound, offsetBy: placeholder.count)
+                binding.wrappedValue = TextSelection(range: range.lowerBound..<newEnd)
+            } else {
+                // Wrap selection
+                let sub = String(text[range])
+                let wrapped = wrap(sub)
+                text.replaceSubrange(range, with: wrapped)
+                let newEnd = text.index(range.lowerBound, offsetBy: wrapped.count)
+                binding.wrappedValue = TextSelection(range: range.lowerBound..<newEnd)
+            }
+        } else {
+            text += (text.isEmpty || text.hasSuffix(" ") || text.hasSuffix("\n") ? "" : " ") + placeholder
+        }
+    }
+
+    private func insertHeader() {
+        if let binding = selection, let sel = binding.wrappedValue, case .selection(let range) = sel.indices {
+            let prefix = "## "
+            text.insert(contentsOf: prefix, at: range.lowerBound)
+            let newEnd = text.index(range.lowerBound, offsetBy: prefix.count)
+            binding.wrappedValue = TextSelection(range: newEnd..<newEnd)
+        } else {
+            text = MarkdownFormatter.appendHeader(level: 2, to: text)
+        }
+    }
+
+    private func insertPrefix(_ prefix: String) {
+        if let binding = selection, let sel = binding.wrappedValue, case .selection(let range) = sel.indices {
+            text.insert(contentsOf: prefix, at: range.lowerBound)
+            let newEnd = text.index(range.lowerBound, offsetBy: prefix.count)
+            binding.wrappedValue = TextSelection(range: newEnd..<newEnd)
+        } else {
+            let separator = text.isEmpty ? "" : (text.hasSuffix("\n") ? "" : "\n")
+            text += separator + prefix
+        }
+    }
+
+    private func insertCodeBlock() {
+        if let binding = selection, let sel = binding.wrappedValue, case .selection(let range) = sel.indices {
+            if !range.isEmpty {
+                let code = String(text[range])
+                let block = "```swift\n\(code)\n```"
+                text.replaceSubrange(range, with: block)
+                let newEnd = text.index(range.lowerBound, offsetBy: block.count)
+                binding.wrappedValue = TextSelection(range: range.lowerBound..<newEnd)
+                return
+            }
+        }
+        text = MarkdownFormatter.appendCodeBlock(to: text)
+    }
+
+    private func insertLink() {
+        if let binding = selection, let sel = binding.wrappedValue, case .selection(let range) = sel.indices, !range.isEmpty {
+            let title = String(text[range])
+            let link = "[\(title)](https://example.com)"
+            text.replaceSubrange(range, with: link)
+            let newEnd = text.index(range.lowerBound, offsetBy: link.count)
+            binding.wrappedValue = TextSelection(range: range.lowerBound..<newEnd)
+        } else {
+            text = MarkdownFormatter.appendLink(to: text)
+        }
     }
 }
