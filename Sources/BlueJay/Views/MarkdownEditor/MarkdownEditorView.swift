@@ -9,10 +9,14 @@ public struct MarkdownEditorView: View {
     /// Optional document title displayed in the header bar.
     public let title: String?
 
+    /// Optional default display mode used when no external mode binding is provided.
+    public let defaultMode: MarkdownEditorMode?
+
     /// Optional save action closure executed on Save button tap or `Cmd+S`.
     public let onSave: (@MainActor @Sendable () -> Void)?
 
-    @State private var internalMode: MarkdownEditorMode = .split
+    @Environment(\.markdownEditorDefaultMode) private var environmentDefaultMode
+    @State private var internalMode: MarkdownEditorMode? = nil
     private var externalMode: Binding<MarkdownEditorMode>?
 
     @State private var selection: TextSelection?
@@ -31,18 +35,22 @@ public struct MarkdownEditorView: View {
     ///   - title: Optional document title.
     ///   - isDirty: Initial dirty state value (defaults to false). Edits will automatically update internal dirty state.
     ///   - mode: Optional external binding controlling the active editor display mode.
+    ///   - defaultMode: Optional default display mode to use when no external mode binding is provided. Defaults to `.split` (via environment).
     ///   - onSave: Optional callback executed when the document is saved.
     public init(
         text: Binding<String>,
         title: String? = nil,
         isDirty: Bool = false,
         mode: Binding<MarkdownEditorMode>? = nil,
+        defaultMode: MarkdownEditorMode? = nil,
         onSave: (@MainActor @Sendable () -> Void)? = nil
     ) {
         self._text = text
         self.title = title
         self._internalIsDirty = State(initialValue: isDirty)
         self.externalMode = mode
+        self.defaultMode = defaultMode
+        self._internalMode = State(initialValue: nil)
         self.externalIsDirty = nil
         self.onSave = onSave
     }
@@ -54,24 +62,38 @@ public struct MarkdownEditorView: View {
     ///   - isDirty: Two-way binding reflecting whether the document has unsaved modifications.
     ///   - title: Optional document title.
     ///   - mode: Optional external binding controlling the active editor display mode.
+    ///   - defaultMode: Optional default display mode to use when no external mode binding is provided. Defaults to `.split` (via environment).
     ///   - onSave: Optional callback executed when the document is saved.
     public init(
         text: Binding<String>,
         isDirty: Binding<Bool>,
         title: String? = nil,
         mode: Binding<MarkdownEditorMode>? = nil,
+        defaultMode: MarkdownEditorMode? = nil,
         onSave: (@MainActor @Sendable () -> Void)? = nil
     ) {
         self._text = text
         self.title = title
         self._internalIsDirty = State(initialValue: isDirty.wrappedValue)
         self.externalMode = mode
+        self.defaultMode = defaultMode
+        self._internalMode = State(initialValue: nil)
         self.externalIsDirty = isDirty
         self.onSave = onSave
     }
 
     private var activeMode: Binding<MarkdownEditorMode> {
-        externalMode ?? $internalMode
+        if let externalMode {
+            return externalMode
+        }
+        return Binding(
+            get: {
+                internalMode ?? defaultMode ?? environmentDefaultMode
+            },
+            set: { newMode in
+                internalMode = newMode
+            }
+        )
     }
 
     private var isDirty: Bool {
