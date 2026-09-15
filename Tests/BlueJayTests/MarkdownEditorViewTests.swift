@@ -94,4 +94,30 @@ struct MarkdownEditorViewTests {
         #expect(editor.defaultMode == .editor)
         let _ = editor.body
     }
+
+    @Test("MarkdownEditorView uses idiomatic opticaldisc icon for save")
+    @MainActor
+    func testSaveIconName() {
+        #expect(MarkdownEditorView.saveIconName == "opticaldisc")
+    }
+
+    @Test("MarkdownEditorView initializes with onSave callback and executes properly")
+    @MainActor
+    func testInitializationWithOnSave() {
+        var text = "Content"
+        let textBinding = Binding(get: { text }, set: { text = $0 })
+        var saved = false
+
+        let editor = MarkdownEditorView(
+            text: textBinding,
+            onSave: {
+                saved = true
+            }
+        )
+
+        #expect(editor.onSave != nil)
+        let _ = editor.body
+        editor.onSave?()
+        #expect(saved == true)
+    }
 }

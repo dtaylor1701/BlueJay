@@ -15,6 +15,9 @@ public struct MarkdownEditorView: View {
     /// Optional save action closure executed on Save button tap or `Cmd+S`.
     public let onSave: (@MainActor @Sendable () -> Void)?
 
+    /// SF Symbol icon name used for the save action button.
+    nonisolated public static let saveIconName: String = "opticaldisc"
+
     @Environment(\.markdownEditorDefaultMode) private var environmentDefaultMode
     @State private var internalMode: MarkdownEditorMode? = nil
     private var externalMode: Binding<MarkdownEditorMode>?
@@ -162,7 +165,6 @@ public struct MarkdownEditorView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
-        .keyboardShortcut("s", modifiers: .command)
         .onAppear {
             if initialText == nil {
                 initialText = text
@@ -283,13 +285,15 @@ public struct MarkdownEditorView: View {
             onSave()
         } label: {
             if labeled {
-                Label("Save", systemImage: "square.and.arrow.down")
+                Label("Save", systemImage: Self.saveIconName)
             } else {
-                Image(systemName: "square.and.arrow.down")
+                Image(systemName: Self.saveIconName)
+                    .accessibilityLabel("Save")
             }
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.small)
+        .keyboardShortcut("s", modifiers: .command)
         .disabled(!isDirty)
         .help("Save changes (Cmd+S)")
     }
