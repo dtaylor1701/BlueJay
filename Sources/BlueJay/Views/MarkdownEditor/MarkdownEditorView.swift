@@ -23,9 +23,6 @@ public struct MarkdownEditorView: View {
     @State private var initialText: String?
     private var externalIsDirty: Binding<Bool>?
 
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
 
     /// Initializes a Markdown editor view with an external dirty-state boolean.
     ///
@@ -99,6 +96,8 @@ public struct MarkdownEditorView: View {
         externalIsDirty?.wrappedValue ?? internalIsDirty
     }
 
+    private static let compactSplitBreakpoint: CGFloat = 480.0
+
     public var body: some View {
         VStack(spacing: 0) {
             headerBar
@@ -112,33 +111,47 @@ public struct MarkdownEditorView: View {
                 case .preview:
                     previewPane
                 case .split:
-                    #if os(macOS)
-                    HSplitView {
-                        editorPane
-                            .frame(minWidth: 260, maxWidth: .infinity, maxHeight: .infinity)
-                        previewPane
-                            .frame(minWidth: 260, maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    #else
-                    if horizontalSizeClass == .compact {
-                        VStack(spacing: 0) {
-                            editorPane
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            Divider()
-                            previewPane
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    GeometryReader { geometry in
+                        if geometry.size.width < Self.compactSplitBreakpoint {
+                            #if os(macOS)
+                            VSplitView {
+                                editorPane
+                                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: .infinity)
+                                previewPane
+                                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: .infinity)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            #else
+                            VStack(spacing: 0) {
+                                editorPane
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                Divider()
+                                previewPane
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            #endif
+                        } else {
+                            #if os(macOS)
+                            HSplitView {
+                                editorPane
+                                    .frame(minWidth: 200, maxWidth: .infinity, maxHeight: .infinity)
+                                previewPane
+                                    .frame(minWidth: 200, maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            #else
+                            HStack(spacing: 0) {
+                                editorPane
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                Divider()
+                                previewPane
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            #endif
                         }
-                    } else {
-                        HStack(spacing: 0) {
-                            editorPane
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            Divider()
-                            previewPane
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
                     }
-                    #endif
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -148,6 +161,8 @@ public struct MarkdownEditorView: View {
             statusBar
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .keyboardShortcut("s", modifiers: .command)
         .onAppear {
             if initialText == nil {
                 initialText = text
@@ -167,59 +182,116 @@ public struct MarkdownEditorView: View {
 
     @ViewBuilder
     private var headerBar: some View {
-        HStack(spacing: 12) {
-            if let title = title {
-                HStack(spacing: 6) {
-                    Text(title)
-                        .font(.headline)
+        ViewThatFits(in: .horizontal) {
+            // Wide single-line layout
+            HStack(spacing: 12) {
+                if let title = title {
+                    titleView(title)
+                }
 
-                    if isDirty {
-                        Circle()
-                            .fill(Color.orange)
-                            .frame(width: 7, height: 7)
-                            .help("Unsaved changes")
-                            .accessibilityLabel("Unsaved changes")
-                    }
+                modePicker(labeled: true)
+                    .frame(maxWidth: 240)
+
+                Divider()
+                    .frame(height: 18)
+
+                MarkdownToolbar(text: $text)
+                    .disabled(activeMode.wrappedValue == .preview)
+
+                Spacer()
+
+                if let onSave = onSave {
+                    saveButton(action: onSave, labeled: true)
                 }
             }
 
-            Picker("Editor Mode", selection: activeMode) {
-                ForEach(MarkdownEditorMode.allCases) { mode in
-                    Label(mode.rawValue, systemImage: mode.iconName).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(maxWidth: 240)
+            // Medium two-line layout with labeled mode picker
+            twoLineHeader(labeled: true, spacing: 8)
 
-            Divider()
-                .frame(height: 18)
-
-            MarkdownToolbar(text: $text)
-                .disabled(activeMode.wrappedValue == .preview)
-
-            Spacer()
-
-            if let onSave = onSave {
-                Button {
-                    Crow.info("Markdown document saved (\(text.count) characters)")
-                    initialText = text
-                    internalIsDirty = false
-                    externalIsDirty?.wrappedValue = false
-                    onSave()
-                } label: {
-                    Label("Save", systemImage: "square.and.arrow.down")
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .keyboardShortcut("s", modifiers: .command)
-                .disabled(!isDirty)
-                .help("Save changes (Cmd+S)")
-            }
+            // Compact two-line layout with icon-only controls
+            twoLineHeader(labeled: false, spacing: 6)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color.secondary.opacity(0.06))
+    }
+
+    @ViewBuilder
+    private func twoLineHeader(labeled: Bool, spacing: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: spacing) {
+                if let title = title {
+                    titleView(title)
+                }
+
+                modePicker(labeled: labeled)
+
+                Spacer()
+
+                if let onSave = onSave {
+                    saveButton(action: onSave, labeled: labeled)
+                }
+            }
+
+            MarkdownToolbar(text: $text)
+                .disabled(activeMode.wrappedValue == .preview)
+        }
+    }
+
+    @ViewBuilder
+    private func titleView(_ title: String) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(.headline)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Circle()
+                .fill(Color.orange)
+                .frame(width: 7, height: 7)
+                .opacity(isDirty ? 1.0 : 0.0)
+                .help(isDirty ? "Unsaved changes" : "")
+                .accessibilityLabel(isDirty ? "Unsaved changes" : "")
+        }
+    }
+
+    @ViewBuilder
+    private func modePicker(labeled: Bool) -> some View {
+        Picker("Editor Mode", selection: activeMode) {
+            ForEach(MarkdownEditorMode.allCases) { mode in
+                if labeled {
+                    Label(mode.rawValue, systemImage: mode.iconName).tag(mode)
+                } else {
+                    Image(systemName: mode.iconName)
+                        .tag(mode)
+                        .help(mode.rawValue)
+                        .accessibilityLabel(mode.rawValue)
+                }
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+    }
+
+    @ViewBuilder
+    private func saveButton(action onSave: @escaping @MainActor @Sendable () -> Void, labeled: Bool) -> some View {
+        Button {
+            Crow.info("Markdown document saved (\(text.count) characters)")
+            initialText = text
+            internalIsDirty = false
+            externalIsDirty?.wrappedValue = false
+            onSave()
+        } label: {
+            if labeled {
+                Label("Save", systemImage: "square.and.arrow.down")
+            } else {
+                Image(systemName: "square.and.arrow.down")
+            }
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        .disabled(!isDirty)
+        .help("Save changes (Cmd+S)")
     }
 
     @ViewBuilder
@@ -245,27 +317,46 @@ public struct MarkdownEditorView: View {
 
     @ViewBuilder
     private var statusBar: some View {
-        HStack(spacing: 12) {
-            let stats = MarkdownDocumentStatistics(text: text)
+        let stats = MarkdownDocumentStatistics(text: text)
 
-            Text("\(stats.lines) lines • \(stats.words) words • \(stats.characters) chars")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-            if isDirty {
-                Text("Unsaved")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.orange)
-            } else {
-                Text("Saved")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                Text("\(stats.lines) lines • \(stats.words) words • \(stats.characters) chars")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                dirtyIndicator
+            }
+
+            HStack(spacing: 8) {
+                Text("\(stats.words)w • \(stats.lines)l")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                dirtyIndicator
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
         .background(Color.secondary.opacity(0.04))
+    }
+
+    @ViewBuilder
+    private var dirtyIndicator: some View {
+        if isDirty {
+            Text("Unsaved")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.orange)
+        } else {
+            Text("Saved")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 }

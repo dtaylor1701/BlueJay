@@ -175,6 +175,13 @@ struct MarkdownEditorLayoutTests {
         for button in editorButtons {
             #expect(button.isEnabled, "Toolbar button '\(button.title)' should be enabled in editor mode")
         }
+
+        // In Split mode, toolbar buttons should also be enabled
+        let splitHarness = makeHarness(mode: .split, size: containerSize)
+        let splitButtons = findToolbarButtons(in: splitHarness.hostingView)
+        for button in splitButtons {
+            #expect(button.isEnabled, "Toolbar button '\(button.title)' should be enabled in split mode")
+        }
     }
 
     @Test("Snapshot export writes valid image representation when configured")
@@ -207,6 +214,59 @@ struct MarkdownEditorLayoutTests {
             let fileURL = outputDir.appendingPathComponent("snapshot_\(mode.rawValue).png")
             try png.write(to: fileURL)
             #expect(FileManager.default.fileExists(atPath: fileURL.path))
+        }
+    }
+
+    @Test("Markdown editor fits within various container widths without overflowing bounds", arguments: [MarkdownEditorMode.editor, MarkdownEditorMode.preview, MarkdownEditorMode.split])
+    func containerBoundsCompliance(mode: MarkdownEditorMode) throws {
+        let testWidths: [CGFloat] = [228, 260, 320, 479, 480, 481, 600]
+        for width in testWidths {
+            let containerSize = CGSize(width: width, height: 400)
+            let harness = makeHarness(mode: mode, size: containerSize)
+            let view = harness.hostingView
+
+            func checkOverflow(in v: NSView) {
+                let rectInRoot = v.convert(v.bounds, to: view)
+                #expect(
+                    rectInRoot.maxX <= width + 1.0,
+                    "In \(mode.rawValue) mode at width \(width), subview \(type(of: v)) has maxX \(rectInRoot.maxX) which exceeds container width \(width)"
+                )
+                #expect(
+                    rectInRoot.minX >= -1.0,
+                    "In \(mode.rawValue) mode at width \(width), subview \(type(of: v)) has minX \(rectInRoot.minX) which spills out to the left"
+                )
+                #expect(
+                    rectInRoot.maxY <= containerSize.height + 1.0,
+                    "In \(mode.rawValue) mode at width \(width), subview \(type(of: v)) has maxY \(rectInRoot.maxY) which exceeds container height \(containerSize.height)"
+                )
+                #expect(
+                    rectInRoot.minY >= -1.0,
+                    "In \(mode.rawValue) mode at width \(width), subview \(type(of: v)) has minY \(rectInRoot.minY) which spills out vertically"
+                )
+                for sub in v.subviews {
+                    checkOverflow(in: sub)
+                }
+            }
+
+            checkOverflow(in: view)
+
+            if mode == .split {
+                func findSplitView(in v: NSView) -> NSSplitView? {
+                    if let split = v as? NSSplitView { return split }
+                    for sub in v.subviews {
+                        if let found = findSplitView(in: sub) { return found }
+                    }
+                    return nil
+                }
+
+                if let splitView = findSplitView(in: view) {
+                    if width < 480 {
+                        #expect(!splitView.isVertical, "Split view should be vertically stacked (isVertical=false) at width \(width) (< 480)")
+                    } else {
+                        #expect(splitView.isVertical, "Split view should be horizontally stacked (isVertical=true) at width \(width) (>= 480)")
+                    }
+                }
+            }
         }
     }
 }
