@@ -4,7 +4,7 @@ import Crow
 /// A lightweight, reusable Markdown editor component with AST live preview, cursor-aware formatting toolbar, and split/editor/preview modes.
 @MainActor
 public struct MarkdownEditorView: View {
-    @Binding var text: String
+    @Binding public var text: String
 
     /// Optional document title displayed in the header bar.
     public let title: String?
@@ -19,7 +19,6 @@ public struct MarkdownEditorView: View {
     @State private var internalMode: MarkdownEditorMode? = nil
     private var externalMode: Binding<MarkdownEditorMode>?
 
-    @State private var selection: TextSelection?
     @State private var internalIsDirty: Bool = false
     @State private var initialText: String?
     private var externalIsDirty: Binding<Bool>?
@@ -116,22 +115,27 @@ public struct MarkdownEditorView: View {
                     #if os(macOS)
                     HSplitView {
                         editorPane
-                            .frame(minWidth: 260)
+                            .frame(minWidth: 260, maxWidth: .infinity, maxHeight: .infinity)
                         previewPane
-                            .frame(minWidth: 260)
+                            .frame(minWidth: 260, maxWidth: .infinity, maxHeight: .infinity)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     #else
                     if horizontalSizeClass == .compact {
                         VStack(spacing: 0) {
                             editorPane
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                             Divider()
                             previewPane
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     } else {
                         HStack(spacing: 0) {
                             editorPane
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                             Divider()
                             previewPane
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
                     #endif
@@ -143,6 +147,7 @@ public struct MarkdownEditorView: View {
 
             statusBar
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             if initialText == nil {
                 initialText = text
@@ -184,14 +189,14 @@ public struct MarkdownEditorView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .frame(maxWidth: 240)
 
-            if activeMode.wrappedValue != .preview {
-                Divider()
-                    .frame(height: 18)
+            Divider()
+                .frame(height: 18)
 
-                MarkdownToolbar(text: $text, selection: $selection)
-            }
+            MarkdownToolbar(text: $text)
+                .disabled(activeMode.wrappedValue == .preview)
 
             Spacer()
 
@@ -219,11 +224,12 @@ public struct MarkdownEditorView: View {
 
     @ViewBuilder
     private var editorPane: some View {
-        TextEditor(text: $text, selection: $selection)
+        TextEditor(text: $text)
             .font(.system(.body, design: .monospaced))
             .padding(12)
             .scrollContentBackground(.hidden)
             .background(Color.primary.opacity(0.02))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -231,7 +237,9 @@ public struct MarkdownEditorView: View {
         ScrollView {
             MarkdownRenderer(markdown: text)
                 .padding(16)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.secondary.opacity(0.03))
     }
 
