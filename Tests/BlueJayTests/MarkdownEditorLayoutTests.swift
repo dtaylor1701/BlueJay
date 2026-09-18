@@ -44,7 +44,61 @@ struct MarkdownEditorLayoutTests {
         return WindowHarness(view: editor, size: size)
     }
 
+    private func findSplitView(in v: NSView) -> NSSplitView? {
+        if let split = v as? NSSplitView { return split }
+        for sub in v.subviews {
+            if let found = findSplitView(in: sub) { return found }
+        }
+        return nil
+    }
+
+    /// Tests that split mode maintains horizontal side-by-side alignment across all container widths,
+    /// avoiding the defect (Perch task 69056A8A-D351-4FDB-943D-C8954D681A7E) where widths under 480 pt
+    /// dropped into vertical stacking (`VSplitView` with `isVertical=false`), cutting off large editor content.
+    @Test(
+        "Split mode maintains horizontal alignment and avoids editor content vertical cutoff across container widths",
+        arguments: [260, 320, 400, 479, 600]
+    )
+    func splitModeMaintainsHorizontalAlignment(width: CGFloat) throws {
+        let largeContent = "# Feature Specification\n\n" + String(repeating: "Line of specification content describing requirements.\n", count: 50)
+        // In TaskInspectorView, container height defaults to 320 pt (ideal height).
+        // At compact widths (< 480 pt), the header bar wraps to 2 lines (~60 pt) and status bar is ~25 pt,
+        // leaving ~235 pt split view height. With 12 pt top/bottom padding, the editor scroll view is 211 pt.
+        // A horizontally-split editor pane should fill >= 200 pt; when vertically stacked, it squished to ~93 pt.
+        let containerHeight: CGFloat = 320.0
+        let expectedMinEditorHeight: CGFloat = 200.0
+
+        let harness = makeHarness(mode: .split, text: largeContent, size: CGSize(width: width, height: containerHeight))
+        let view = harness.hostingView
+
+        let splitView = try #require(findSplitView(in: view), "NSSplitView must exist in split mode at width \(width)")
+        #expect(
+            splitView.isVertical,
+            "Split mode at width \(width) must be horizontally aligned (side-by-side with isVertical=true), but was vertically stacked (isVertical=false), causing large editor content to be cut off."
+        )
+
+        func findEditorScrollView() -> NSScrollView? {
+            guard let firstPane = splitView.subviews.first else { return nil }
+            func search(in sub: NSView) -> NSScrollView? {
+                if let sv = sub as? NSScrollView { return sv }
+                for c in sub.subviews {
+                    if let found = search(in: c) { return found }
+                }
+                return nil
+            }
+            return search(in: firstPane)
+        }
+
+        let editorScrollView = try #require(findEditorScrollView(), "Editor scroll view must be present in editor pane")
+        #expect(
+            editorScrollView.frame.height >= expectedMinEditorHeight,
+            "Editor scroll view height (\(editorScrollView.frame.height) pt) was squished below minimum height (\(expectedMinEditorHeight) pt) at container height \(containerHeight) pt."
+        )
+    }
+
+
     @Test("Content portion fills available vertical space in all modes", arguments: MarkdownEditorMode.allCases)
+
     func contentPortionFillsSpace(mode: MarkdownEditorMode) throws {
         let containerSize = CGSize(width: 600, height: 400)
         let expectedMinContentHeight: CGFloat = 300.0
@@ -71,13 +125,6 @@ struct MarkdownEditorLayoutTests {
 
         // For split mode specifically, verify that both split items have full vertical height
         if mode == .split {
-            func findSplitView(in v: NSView) -> NSSplitView? {
-                if let split = v as? NSSplitView { return split }
-                for sub in v.subviews {
-                    if let found = findSplitView(in: sub) { return found }
-                }
-                return nil
-            }
             let splitView = try #require(findSplitView(in: view), "Split view must be present in split mode")
             #expect(
                 splitView.frame.height >= expectedMinContentHeight,
@@ -251,20 +298,8 @@ struct MarkdownEditorLayoutTests {
             checkOverflow(in: view)
 
             if mode == .split {
-                func findSplitView(in v: NSView) -> NSSplitView? {
-                    if let split = v as? NSSplitView { return split }
-                    for sub in v.subviews {
-                        if let found = findSplitView(in: sub) { return found }
-                    }
-                    return nil
-                }
-
                 if let splitView = findSplitView(in: view) {
-                    if width < 480 {
-                        #expect(!splitView.isVertical, "Split view should be vertically stacked (isVertical=false) at width \(width) (< 480)")
-                    } else {
-                        #expect(splitView.isVertical, "Split view should be horizontally stacked (isVertical=true) at width \(width) (>= 480)")
-                    }
+                    #expect(splitView.isVertical, "Split view should be horizontally stacked (isVertical=true) at width \(width)")
                 }
             }
         }

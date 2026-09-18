@@ -99,8 +99,6 @@ public struct MarkdownEditorView: View {
         externalIsDirty?.wrappedValue ?? internalIsDirty
     }
 
-    private static let compactSplitBreakpoint: CGFloat = 480.0
-
     public var body: some View {
         VStack(spacing: 0) {
             headerBar
@@ -114,50 +112,27 @@ public struct MarkdownEditorView: View {
                 case .preview:
                     previewPane
                 case .split:
-                    GeometryReader { geometry in
-                        if geometry.size.width < Self.compactSplitBreakpoint {
-                            #if os(macOS)
-                            VSplitView {
-                                editorPane
-                                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: .infinity)
-                                previewPane
-                                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: .infinity)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            #else
-                            VStack(spacing: 0) {
-                                editorPane
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                Divider()
-                                previewPane
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            #endif
-                        } else {
-                            #if os(macOS)
-                            HSplitView {
-                                editorPane
-                                    .frame(minWidth: 200, maxWidth: .infinity, maxHeight: .infinity)
-                                previewPane
-                                    .frame(minWidth: 200, maxWidth: .infinity, maxHeight: .infinity)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            #else
-                            HStack(spacing: 0) {
-                                editorPane
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                Divider()
-                                previewPane
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            #endif
-                        }
+                    #if os(macOS)
+                    HSplitView {
+                        editorPane
+                            .frame(minWidth: 100, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        previewPane
+                            .frame(minWidth: 100, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    #else
+                    HStack(spacing: 0) {
+                        editorPane
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        Divider()
+                        previewPane
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    #endif
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             Divider()
 
@@ -305,7 +280,7 @@ public struct MarkdownEditorView: View {
             .padding(12)
             .scrollContentBackground(.hidden)
             .background(Color.primary.opacity(0.02))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     @ViewBuilder
@@ -315,7 +290,7 @@ public struct MarkdownEditorView: View {
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.secondary.opacity(0.03))
     }
 
